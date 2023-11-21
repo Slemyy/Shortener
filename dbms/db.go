@@ -1,10 +1,9 @@
 package dbms
 
 import (
-	"Shortener/config"
 	"encoding/json"
 	"errors"
-	"net"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -16,15 +15,6 @@ type Database struct {
 	URL     string    `json:"URL"`
 	Visits  int       `json:"visited"`
 	Created time.Time `json:"created"`
-}
-
-func LoadDBMS(cfg *config.Config) (net.Conn, error) {
-	conn, err := net.Dial(cfg.Database.Network, cfg.Database.Port)
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, nil
 }
 
 func hasSuffix(dataFile string) string {
@@ -46,10 +36,13 @@ func readFromDatabase(dataFile string) ([]Database, error) {
 		}
 	}
 
+	fmt.Println(shortURLs[0])
+
 	return shortURLs, nil
 }
 
-func FindInDatabase(dataFile string, shortURL string, URL string) (string, error) {
+func AddToDatabase(dataFile string, shortURL string, URL string) (string, error) {
+	var short string
 	dataFile = hasSuffix(dataFile)
 
 	DB, err := readFromDatabase(dataFile)
@@ -70,6 +63,7 @@ func FindInDatabase(dataFile string, shortURL string, URL string) (string, error
 	for _, existingShortURL := range DB {
 		if newShortURL.URL == existingShortURL.URL {
 			isUnique = false
+			short = existingShortURL.Name
 			// Если данные не уникальны, вернем значение.
 			return existingShortURL.Name, nil
 		}
@@ -77,6 +71,7 @@ func FindInDatabase(dataFile string, shortURL string, URL string) (string, error
 
 	// Если данные уникальны, добавьте их в существующий срез.
 	if isUnique {
+		short = newShortURL.Name
 		DB = append(DB, newShortURL)
 	}
 
@@ -92,5 +87,23 @@ func FindInDatabase(dataFile string, shortURL string, URL string) (string, error
 		return "", err
 	}
 
-	return "", nil
+	return short, nil
+}
+
+func FindInDatabase(dataFile string, shortURL string) (string, error) {
+	dataFile = hasSuffix(dataFile)
+
+	DB, err := readFromDatabase(dataFile)
+	if err != nil {
+		return "", err
+	}
+
+	// Проверка на уникальность новых данных в существующем срезе.
+	for _, existingShortURL := range DB {
+		if shortURL == existingShortURL.Name {
+			return existingShortURL.URL, nil // Если данные не уникальны, вернем значение.
+		}
+	}
+
+	return "", errors.New("link not found")
 }

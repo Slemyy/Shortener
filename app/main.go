@@ -4,12 +4,10 @@ import (
 	"Shortener/config"
 	"Shortener/handlers"
 	"log"
-	"net"
 	"net/http"
 	"sync"
 )
 
-var conn net.Conn
 var mut sync.Mutex
 
 func main() {
@@ -38,14 +36,9 @@ func main() {
 }
 
 func shorten(writer http.ResponseWriter, request *http.Request) {
-	if request.Method != http.MethodPost {
-		http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	handlers.ShortenHandler(writer, request, &mut)
 }
 
 func redirect(writer http.ResponseWriter, request *http.Request) {
-	handlers.RedirectHandler(writer, request, conn, &mut)
+	handlers.RedirectHandler(writer, request, &mut)
 }

@@ -10,6 +10,11 @@ import (
 )
 
 func ShortenHandler(writer http.ResponseWriter, request *http.Request, mut *sync.Mutex) {
+	if request.Method != http.MethodPost {
+		http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	err := request.ParseForm()
 	if err != nil {
 		return
@@ -24,7 +29,6 @@ func ShortenHandler(writer http.ResponseWriter, request *http.Request, mut *sync
 
 	mut.Lock()
 	defer mut.Unlock()
-
 	shortURL := generateShortURL(6)
 
 	conn, err := net.Dial("tcp", "localhost:6379")

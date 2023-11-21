@@ -4,15 +4,11 @@ import (
 	"Shortener/dbms"
 	"errors"
 	"strings"
-	"sync"
 )
 
 // DatabaseHandler QUERY (add <SHORT_URL> <URL>)
-func DatabaseHandler(file string, query string, mut *sync.Mutex) (string, error) {
+func DatabaseHandler(file string, query string) (string, error) {
 	request := strings.Fields(query)
-
-	mut.Lock()
-	defer mut.Unlock()
 
 	switch strings.ToLower(request[0]) {
 	case "add":
@@ -20,7 +16,7 @@ func DatabaseHandler(file string, query string, mut *sync.Mutex) (string, error)
 			return "", errors.New("invalid request")
 		}
 
-		result, err := dbms.FindInDatabase(file, request[1], request[2])
+		result, err := dbms.AddToDatabase(file, request[1], request[2])
 		if err != nil {
 			return "", err
 		}
@@ -28,7 +24,16 @@ func DatabaseHandler(file string, query string, mut *sync.Mutex) (string, error)
 		return result, nil
 
 	case "get":
-		return "", nil
+		if len(request) != 2 {
+			return "", errors.New("invalid request")
+		}
+
+		result, err := dbms.FindInDatabase(file, request[1])
+		if err != nil {
+			return "", err
+		}
+
+		return result, nil
 
 	default:
 		return "", errors.New("invalid request")

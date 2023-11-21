@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"strings"
-	"sync"
 )
 
 func main() {
@@ -32,33 +31,28 @@ func main() {
 			return
 		}
 
-		var mut sync.Mutex
-		go handleClient(conn, &mut, cfg)
+		go handleClient(conn, cfg)
 	}
 }
 
-func handleClient(conn net.Conn, mut *sync.Mutex, cfg *config.Config) {
+func handleClient(conn net.Conn, cfg *config.Config) {
 	defer func(conn net.Conn) { _ = conn.Close() }(conn)
-	remoteAddr := conn.RemoteAddr() // Получение адреса удаленного узла
-
-	log.Printf("Connection established with: %s\n", remoteAddr)
 
 	buffer := make([]byte, 1024)
 	for {
 		n, err := conn.Read(buffer)
 		if err != nil {
-			log.Printf("Connection to %s is closed.\n", remoteAddr)
 			return
 		}
 
 		clientMessage := string(buffer[:n])
-		log.Printf("Received from %s: %s", remoteAddr, clientMessage)
+		log.Printf("Received from service: %s", clientMessage)
 		args := strings.Fields(clientMessage)
 
 		if len(args) < 4 {
 			_, err = conn.Write([]byte("Not enough arguments. Use: --file <file.json> --query <query>.\n"))
 			if err != nil {
-				log.Printf("(%s) Error: %v\n", remoteAddr, err)
+				log.Printf("Error: %v\n", err)
 				break
 			}
 
@@ -67,7 +61,7 @@ func handleClient(conn net.Conn, mut *sync.Mutex, cfg *config.Config) {
 		} else if args[0] != "--file" || args[2] != "--query" {
 			_, err = conn.Write([]byte("Not enough arguments. Use: --file <file.json> --query <query>.\n"))
 			if err != nil {
-				log.Printf("(%s) Error: %v\n", remoteAddr, err)
+				log.Printf("Error: %v\n", err)
 				break
 			}
 
@@ -84,21 +78,21 @@ func handleClient(conn net.Conn, mut *sync.Mutex, cfg *config.Config) {
 			query = query[:len(query)-1]
 		}
 
-		ans, err := handlers.DatabaseHandler(args[1], query, mut)
+		ans, err := handlers.DatabaseHandler(args[1], query)
 		if err != nil {
 			response := "Error: " + err.Error() + "\n"
 			_, err := conn.Write([]byte(response))
 			if err != nil {
-				log.Printf("(%s) Error: %v\n", remoteAddr, err)
+				log.Printf("Error: %v\n", err)
 				break
 			}
 		}
 
 		// Отправка ответа клиенту
-		log.Printf("[✔] (%s) Request processed successfully.", remoteAddr)
+		log.Printf("[✔] Request processed successfully.")
 		_, err = conn.Write([]byte(ans + "\n"))
 		if err != nil {
-			log.Printf("(%s) Error: %v\n", remoteAddr, err)
+			log.Printf("Error: %v\n", err)
 			break
 		}
 	}
