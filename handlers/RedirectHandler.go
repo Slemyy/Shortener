@@ -1,7 +1,11 @@
 package handlers
 
-import "net/http"
+import (
+	"net"
+	"net/http"
+	"sync"
+)
 
-func RedirectHandler(writer http.ResponseWriter, request *http.Request) {
+func RedirectHandler(writer http.ResponseWriter, request *http.Request, conn net.Conn, mut *sync.Mutex) {
 
 }

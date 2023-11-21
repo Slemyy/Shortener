@@ -2,6 +2,7 @@ package main
 
 import (
 	"Shortener/config"
+	"Shortener/handlers"
 	"log"
 	"net"
 	"strings"
@@ -36,7 +37,7 @@ func main() {
 	}
 }
 
-func handleClient(conn net.Conn, s *sync.Mutex, cfg *config.Config) {
+func handleClient(conn net.Conn, mut *sync.Mutex, cfg *config.Config) {
 	defer func(conn net.Conn) { _ = conn.Close() }(conn)
 	remoteAddr := conn.RemoteAddr() // Получение адреса удаленного узла
 
@@ -51,16 +52,6 @@ func handleClient(conn net.Conn, s *sync.Mutex, cfg *config.Config) {
 		}
 
 		clientMessage := string(buffer[:n])
-		if clientMessage != "\r\n" {
-			_, err = conn.Write([]byte("Not enough arguments. Use: --file <file.json> --query <query>.\n"))
-			if err != nil {
-				log.Printf("Error: %v\n", err)
-				break
-			}
-
-			continue
-		}
-
 		log.Printf("Received from %s: %s", remoteAddr, clientMessage)
 		args := strings.Fields(clientMessage)
 
@@ -91,6 +82,24 @@ func handleClient(conn net.Conn, s *sync.Mutex, cfg *config.Config) {
 
 		if query[len(query)-1] == '\'' || query[len(query)-1] == '"' || query[len(query)-1] == '>' {
 			query = query[:len(query)-1]
+		}
+
+		ans, err := handlers.DatabaseHandler(args[1], query, mut)
+		if err != nil {
+			response := "Error: " + err.Error() + "\n"
+			_, err := conn.Write([]byte(response))
+			if err != nil {
+				log.Printf("(%s) Error: %v\n", remoteAddr, err)
+				break
+			}
+		}
+
+		// Отправка ответа клиенту
+		log.Printf("[✔] (%s) Request processed successfully.", remoteAddr)
+		_, err = conn.Write([]byte(ans + "\n"))
+		if err != nil {
+			log.Printf("(%s) Error: %v\n", remoteAddr, err)
+			break
 		}
 	}
 }
