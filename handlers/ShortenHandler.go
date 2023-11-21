@@ -41,7 +41,7 @@ func ShortenHandler(writer http.ResponseWriter, request *http.Request, mut *sync
 	fmt.Fprint(conn, "--file database --query 'add "+shortURL+" "+originalURL+"'")
 	req, _ := bufio.NewReader(conn).ReadString('\n')
 
-	_, err = fmt.Fprintf(writer, "Shortened URL: http://localhost:8080/%s", req)
+	_, err = fmt.Fprintf(writer, "http://localhost:8080/%s", req)
 	if err != nil {
 		return
 	}
@@ -51,8 +51,10 @@ func ShortenHandler(writer http.ResponseWriter, request *http.Request, mut *sync
 func generateShortURL(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	result := make([]byte, length)
+
 	for i := range result {
 		result[i] = charset[rand.Intn(len(charset))]
 	}
+
 	return string(result)
 }

@@ -26,7 +26,7 @@ func RedirectHandler(writer http.ResponseWriter, request *http.Request, mut *syn
 	req, _ := bufio.NewReader(conn).ReadString('\n')
 
 	if req != "" {
-		http.Redirect(writer, request, req, http.StatusFound)
+		http.Redirect(writer, request, req[:len(req)-1], http.StatusFound)
 	} else {
 		http.NotFound(writer, request)
 	}

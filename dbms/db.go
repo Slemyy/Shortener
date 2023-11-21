@@ -3,7 +3,6 @@ package dbms
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -35,8 +34,6 @@ func readFromDatabase(dataFile string) ([]Database, error) {
 			return nil, errors.New("could not read databases")
 		}
 	}
-
-	fmt.Println(shortURLs[0])
 
 	return shortURLs, nil
 }
