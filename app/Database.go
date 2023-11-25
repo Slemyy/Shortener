@@ -6,23 +6,24 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync"
 )
 
 func main() {
 	// Загружаем конфиг для работы с программой.
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("Error loading config: %v\n", err)
+		log.Fatalf("[✗] Error loading config: %v\n", err)
 	}
 
 	listener, err := net.Listen(cfg.Database.Network, cfg.Database.Port)
 	if err != nil {
-		log.Fatalln("Error starting database:", err.Error())
+		log.Fatalln("[✗] Error starting database:", err.Error())
 		return
 	}
 
 	defer func(listener net.Listener) { _ = listener.Close() }(listener)
-	log.Println("The database was loaded on the port", listener.Addr().String()[5:]+"...")
+	log.Println("[✔] The database was loaded on the port", listener.Addr().String()[5:]+"...")
 
 	for {
 		conn, err := listener.Accept()
@@ -31,11 +32,12 @@ func main() {
 			return
 		}
 
-		go handleClient(conn, cfg)
+		var mutex sync.Mutex
+		go handleClient(conn, &mutex)
 	}
 }
 
-func handleClient(conn net.Conn, cfg *config.Config) {
+func handleClient(conn net.Conn, mutex *sync.Mutex) {
 	defer func(conn net.Conn) { _ = conn.Close() }(conn)
 
 	buffer := make([]byte, 1024)
@@ -46,22 +48,22 @@ func handleClient(conn net.Conn, cfg *config.Config) {
 		}
 
 		clientMessage := string(buffer[:n])
-		log.Printf("Received from service: %s", clientMessage)
+		log.Printf("Service request: %s", clientMessage)
 		args := strings.Fields(clientMessage)
 
 		if len(args) < 4 {
 			_, err = conn.Write([]byte("Not enough arguments. Use: --file <file.json> --query <query>.\n"))
 			if err != nil {
-				log.Printf("Error: %v\n", err)
+				log.Printf("[✗] Error: %v\n", err)
 				break
 			}
 
 			continue
 
 		} else if args[0] != "--file" || args[2] != "--query" {
-			_, err = conn.Write([]byte("Not enough arguments. Use: --file <file.json> --query <query>.\n"))
+			_, err = conn.Write([]byte("[✗] Not enough arguments. Use: --file <file.json> --query <query>.\n"))
 			if err != nil {
-				log.Printf("Error: %v\n", err)
+				log.Printf("[✗] Error: %v\n", err)
 				break
 			}
 
@@ -78,12 +80,12 @@ func handleClient(conn net.Conn, cfg *config.Config) {
 			query = query[:len(query)-1]
 		}
 
-		ans, err := handlers.DatabaseHandler(args[1], query)
+		ans, err := handlers.DatabaseHandler(args[1], query, mutex)
 		if err != nil {
 			response := "Error: " + err.Error() + "\n"
 			_, err := conn.Write([]byte(response))
 			if err != nil {
-				log.Printf("Error: %v\n", err)
+				log.Printf("[✗] Error: %v\n", err)
 				break
 			}
 		}
@@ -92,7 +94,7 @@ func handleClient(conn net.Conn, cfg *config.Config) {
 		log.Printf("[✔] Request processed successfully.")
 		_, err = conn.Write([]byte(ans + "\n"))
 		if err != nil {
-			log.Printf("Error: %v\n", err)
+			log.Printf("[✗] Error: %v\n", err)
 			break
 		}
 	}

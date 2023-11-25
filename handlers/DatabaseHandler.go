@@ -1,14 +1,20 @@
 package handlers
 
 import (
-	"Shortener/dbms"
+	"Shortener/database"
 	"errors"
 	"strings"
+	"sync"
 )
 
 // DatabaseHandler QUERY (add <SHORT_URL> <URL>)
-func DatabaseHandler(file string, query string) (string, error) {
+func DatabaseHandler(file string, query string, mutex *sync.Mutex) (string, error) {
 	request := strings.Fields(query)
+
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	hash := &database.HashTable{}
 
 	switch strings.ToLower(request[0]) {
 	case "add":
@@ -16,7 +22,17 @@ func DatabaseHandler(file string, query string) (string, error) {
 			return "", errors.New("invalid request")
 		}
 
-		result, err := dbms.AddToDatabase(file, request[1], request[2])
+		err := hash.ReadFromFile(file)
+		if err != nil {
+			return "", err
+		}
+
+		result, err := hash.Insert(request[1], request[2])
+		if err != nil {
+			return "", err
+		}
+
+		err = hash.WriteToFile(file)
 		if err != nil {
 			return "", err
 		}
@@ -28,7 +44,17 @@ func DatabaseHandler(file string, query string) (string, error) {
 			return "", errors.New("invalid request")
 		}
 
-		result, err := dbms.FindInDatabase(file, request[1])
+		err := hash.ReadFromFile(file)
+		if err != nil {
+			return "", err
+		}
+
+		result, err := hash.Get(request[1])
+		if err != nil {
+			return "", err
+		}
+
+		err = hash.WriteToFile(file)
 		if err != nil {
 			return "", err
 		}

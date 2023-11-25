@@ -7,30 +7,30 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig    `json:"server"`
+	Shortener ShortenerConfig `json:"shortener"`
 	Database  DatabaseConfig  `json:"database"`
-	Shortlink ShortlinkConfig `json:"shortlink"`
+	Report    ReportConfig    `json:"report"`
 }
 
-// ServerConfig структура для параметров сервера
-type ServerConfig struct {
+// ShortenerConfig структура для параметров сервиса
+type ShortenerConfig struct {
 	Host string `json:"host"`
-	Port int    `json:"port"`
+	Port string `json:"port"`
 }
 
 // DatabaseConfig структура для параметров базы данных
 type DatabaseConfig struct {
-	Location string `json:"location"`
-	Name     string `json:"name"`
 	Host     string `json:"host"`
 	Port     string `json:"port"`
 	Network  string `json:"network"`
+	Location string `json:"location"`
+	Name     string `json:"name"`
 }
 
-// ShortlinkConfig структура для параметров сокращения ссылок
-type ShortlinkConfig struct {
-	Length     int    `json:"length"`
-	Characters string `json:"characters"`
+// ReportConfig структура для параметров сервиса отчетов
+type ReportConfig struct {
+	Host string `json:"host"`
+	Port string `json:"port"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -40,7 +40,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	var config Config
-	if err := json.Unmarshal(configData, &config); err != nil {
+	if err = json.Unmarshal(configData, &config); err != nil {
 		return nil, err
 	}
 

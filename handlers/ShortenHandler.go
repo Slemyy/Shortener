@@ -2,26 +2,21 @@ package handlers
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/http"
 	"sync"
 )
 
 func ShortenHandler(writer http.ResponseWriter, request *http.Request, mut *sync.Mutex) {
-	if request.Method != http.MethodPost {
-		http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	err := request.ParseForm()
 	if err != nil {
 		return
 	}
 
 	originalURL := request.Form.Get("url")
-
 	if originalURL == "" {
 		http.Error(writer, "URL is required", http.StatusBadRequest)
 		return
@@ -29,32 +24,35 @@ func ShortenHandler(writer http.ResponseWriter, request *http.Request, mut *sync
 
 	mut.Lock()
 	defer mut.Unlock()
-	shortURL := generateShortURL(6)
+
+	shortURL := generateShortURL(originalURL) // Сокращаем ссылку
 
 	conn, err := net.Dial("tcp", "localhost:6379")
+	defer func(conn net.Conn) { _ = conn.Close() }(conn)
+
+	_, err = fmt.Fprint(conn, "--file database/db --query 'add "+shortURL+" "+originalURL+"'")
 	if err != nil {
 		return
 	}
-
-	defer conn.Close()
-
-	fmt.Fprint(conn, "--file database --query 'add "+shortURL+" "+originalURL+"'")
 	req, _ := bufio.NewReader(conn).ReadString('\n')
 
-	_, err = fmt.Fprintf(writer, "http://localhost:8080/%s", req)
-	if err != nil {
-		return
+	if req[:5] != "Error" {
+		_, err = fmt.Fprint(writer, "http://localhost:8080/"+req)
+		if err != nil {
+			return
+		}
+	} else {
+		_, err = fmt.Fprint(writer, req)
+		if err != nil {
+			return
+		}
 	}
 }
 
-// Генерация случайного сокращенного URL
-func generateShortURL(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	result := make([]byte, length)
+func generateShortURL(input string) string {
+	hash := sha256.New()
+	hash.Write([]byte(input))
+	shortLink := hex.EncodeToString(hash.Sum(nil))
 
-	for i := range result {
-		result[i] = charset[rand.Intn(len(charset))]
-	}
-
-	return string(result)
+	return shortLink[:7]
 }

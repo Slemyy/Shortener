@@ -1,8 +1,9 @@
 {
-  "server": {
+  "shortener": {
     "host": "localhost",
-    "port": 8080
+    "port": ":8080"
   },
+
   "database": {
     "host": "localhost",
     "port": ":6379",
@@ -10,8 +11,9 @@
     "location": "",
     "name": "database"
   },
-  "shortlink": {
-    "length": 6,
-    "characters": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+  "report": {
+    "host": "localhost",
+    "port": "9090"
   }
 }
