@@ -50,7 +50,7 @@ type PageVariables struct {
 	Title string
 }
 
-func HomePage(writer http.ResponseWriter, request *http.Request) {
+func HomePage(writer http.ResponseWriter, _ *http.Request) {
 	pageVariables := PageVariables{
 		Title: "Shortener",
 	}

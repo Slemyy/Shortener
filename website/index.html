@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body class="dark">
+<div id="shorten-form" class="dark">
+    <h1>Сокращение ссылок</h1>
+    <form id="url-form">
+        <label for="url"></label><input type="url" id="url" name="url" placeholder="Введите ссылку" required>
+        <button type="button" onclick="shortenURL()">Сократить</button>
+    </form>
+    <div id="result"></div>
+    <script>
+        function shortenURL() {
+            const originalURL = document.getElementById('url').value;
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/shorten', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = 'Сокращенная ссылка: <a href="' + xhr.responseText + '" target="_blank">' + xhr.responseText + '</a>';
+                }
+            };
+            xhr.send('url=' + originalURL);
+        }
+    </script>
+</div>
+</body>
+</html>

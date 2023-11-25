@@ -2,8 +2,8 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
+	"os"
 )
 
 type Config struct {
@@ -34,7 +34,7 @@ type ReportConfig struct {
 }
 
 func LoadConfig() (*Config, error) {
-	configData, err := ioutil.ReadFile("config/config.json")
+	configData, err := os.ReadFile("config/config.json")
 	if err != nil {
 		return nil, err
 	}
