@@ -45,8 +45,13 @@ func main() {
 	}
 }
 
-func handleConnection(conn net.Conn, s *sync.Mutex) {
-	defer func(conn net.Conn) { _ = conn.Close() }(conn)
+func handleConnection(conn net.Conn, mut *sync.Mutex) {
+	defer func(conn net.Conn) {
+		_ = conn.Close()
+		mut.Unlock()
+	}(conn)
+
+	mut.Lock()
 
 	buffer := make([]byte, 1024)
 	for {

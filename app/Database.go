@@ -74,7 +74,7 @@ func handleClient(conn net.Conn, mutex *sync.Mutex) {
 			query = query[:len(query)-1]
 		}
 
-		if query[:13] == "create_report" {
+		if len(query) > 12 && query[:13] == "create_report" {
 			jsonFile, err := os.ReadFile("stats.json")
 			if err != nil {
 				log.Printf("[✗] Error: %v\n", err)
