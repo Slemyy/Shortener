@@ -8,11 +8,11 @@ import (
 )
 
 // DatabaseHandler QUERY (add <SHORT_URL> <URL>)
-func DatabaseHandler(file string, query string, mutex *sync.Mutex) (string, error) {
+func DatabaseHandler(file string, query string, mut *sync.Mutex) (string, error) {
 	request := strings.Fields(query)
 
-	mutex.Lock()
-	defer mutex.Unlock()
+	mut.Lock()
+	defer mut.Unlock()
 
 	hash := &database.HashTable{}
 

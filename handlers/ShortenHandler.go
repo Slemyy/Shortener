@@ -30,7 +30,7 @@ func ShortenHandler(writer http.ResponseWriter, request *http.Request, mut *sync
 	conn, err := net.Dial("tcp", "localhost:6379")
 	defer func(conn net.Conn) { _ = conn.Close() }(conn)
 
-	_, err = fmt.Fprint(conn, "--file database/db --query 'add "+shortURL+" "+originalURL+"'")
+	_, err = fmt.Fprint(conn, "--file database/db.data --query 'add "+shortURL+" "+originalURL+"'")
 	if err != nil {
 		return
 	}

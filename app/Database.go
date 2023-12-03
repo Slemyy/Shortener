@@ -1,22 +1,16 @@
 package main
 
 import (
-	"Shortener/config"
 	"Shortener/handlers"
 	"log"
 	"net"
+	"os"
 	"strings"
 	"sync"
 )
 
 func main() {
-	// Загружаем конфиг для работы с программой.
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatalf("[✗] Error loading config: %v\n", err)
-	}
-
-	listener, err := net.Listen(cfg.Database.Network, cfg.Database.Port)
+	listener, err := net.Listen("tcp", ":6379")
 	if err != nil {
 		log.Fatalln("[✗] Error starting database:", err.Error())
 		return
@@ -28,7 +22,7 @@ func main() {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Fatalln("Error connecting to database", err.Error())
+			log.Fatalln("[✗] Error connecting to database", err.Error())
 			return
 		}
 
@@ -52,7 +46,7 @@ func handleClient(conn net.Conn, mutex *sync.Mutex) {
 		args := strings.Fields(clientMessage)
 
 		if len(args) < 4 {
-			_, err = conn.Write([]byte("Not enough arguments. Use: --file <file.json> --query <query>.\n"))
+			_, err = conn.Write([]byte("[✗] Not enough arguments. Use: --file <file.json> --query <query>.\n"))
 			if err != nil {
 				log.Printf("[✗] Error: %v\n", err)
 				break
@@ -78,6 +72,23 @@ func handleClient(conn net.Conn, mutex *sync.Mutex) {
 
 		if query[len(query)-1] == '\'' || query[len(query)-1] == '"' || query[len(query)-1] == '>' {
 			query = query[:len(query)-1]
+		}
+
+		if query[:13] == "create_report" {
+			jsonFile, err := os.ReadFile("stats.json")
+			if err != nil {
+				log.Printf("[✗] Error: %v\n", err)
+				break
+			}
+
+			log.Printf("[✔] Request processed successfully.")
+			_, err = conn.Write(jsonFile)
+			if err != nil {
+				log.Printf("[✗] Error: %v\n", err)
+				break
+			}
+
+			return
 		}
 
 		ans, err := handlers.DatabaseHandler(args[1], query, mutex)

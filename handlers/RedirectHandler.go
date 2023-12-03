@@ -26,11 +26,17 @@ func RedirectHandler(writer http.ResponseWriter, request *http.Request, mut *syn
 		mut.Unlock()
 	}(conn)
 
-	_, err = fmt.Fprint(conn, "--file database/db --query 'get "+shortURL+"'")
+	_, err = fmt.Fprint(conn, "--file database/db.data --query 'get "+shortURL+"'")
 	if err != nil {
 		return
 	}
 	req, _ := bufio.NewReader(conn).ReadString('\n')
+
+	go func() {
+		connReport, _ := net.Dial("tcp", "localhost:9090")
+		_, err = fmt.Fprint(connReport, "add_stats "+req[:len(req)-1]+" "+shortURL+" "+GetClientIP(request)+"\n")
+		_ = connReport.Close()
+	}()
 
 	if req[:5] != "Error" {
 		switch strings.HasPrefix(req, "http") || strings.HasPrefix(req, "https") {
@@ -42,4 +48,19 @@ func RedirectHandler(writer http.ResponseWriter, request *http.Request, mut *syn
 	} else {
 		http.Redirect(writer, request, "http://localhost:8080/", http.StatusFound)
 	}
+}
+
+func GetClientIP(request *http.Request) string {
+	// Получаем IP-адрес клиента из заголовка X-Real-IP или X-Forwarded-For
+	ip := request.Header.Get("X-Real-IP")
+	if ip == "" {
+		ip = request.Header.Get("X-Forwarded-For")
+	}
+
+	// Если заголовки не содержат информацию о IP, используем RemoteAddr
+	if ip == "" {
+		ip, _, _ = net.SplitHostPort(request.RemoteAddr)
+	}
+
+	return ip
 }
