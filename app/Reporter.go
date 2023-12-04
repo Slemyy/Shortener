@@ -53,6 +53,7 @@ func handleConnection(conn net.Conn, mut *sync.Mutex) {
 
 		if args[0] == "add_stats" { // Добавляем статистику
 			reporter.UpdateStatistics(args[1], args[2], args[3])
+			log.Println("[✔] Statistics updated successfully.")
 		} else if args[0] == "create_report" { // Формируем отчет
 			var hierarchy []string
 
