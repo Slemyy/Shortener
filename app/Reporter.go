@@ -3,6 +3,7 @@ package main
 import (
 	"Shortener/reporter"
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -83,7 +84,16 @@ func handleConnection(conn net.Conn, mut *sync.Mutex) {
 			JsonFile := reporter.ByteToJson(response)
 			JsonData := reporter.CreateReport(hierarchy, JsonFile)
 
-			err = reporter.WriteJSONToFile(JsonData, reporter.ReportFilename)
+			go func() {
+				// Отправка результата клиенту
+				encoder := json.NewEncoder(conn)
+				encoder.SetIndent("", "  ")
+				if err := encoder.Encode(&JsonData); err != nil {
+					log.Println("[✗] Error: there was an error sending data to the client.")
+				}
+			}()
+
+			err = reporter.WriteJSONToFile(&JsonData, reporter.ReportFilename)
 			if err != nil {
 				fmt.Println("[✗] Error writing to report file:", err)
 				return
