@@ -14,6 +14,9 @@ var mut sync.Mutex
 
 func main() {
 	r := mux.NewRouter()
+
+	r.Use(checkSecretPath)
+
 	r.HandleFunc("/favicon.ico", func(writer http.ResponseWriter, request *http.Request) {
 		_, err := fmt.Fprintf(writer, "Что ты тут делаешь?")
 		if err != nil {
@@ -31,7 +34,9 @@ func main() {
 		handlers.ReportHandler(writer, request, &mut)
 	}).Methods("POST")
 
-	http.HandleFunc("/styles.css", ServeCSS)
+	http.HandleFunc("/styles.css", func(writer http.ResponseWriter, request *http.Request) {
+		http.ServeFile(writer, request, "website/styles.css")
+	})
 	http.Handle("/", r)
 
 	log.Println("[✔] Server started successfully.")
@@ -44,9 +49,15 @@ func main() {
 	log.Println("[✔] Server stopped.")
 }
 
-// ServeCSS подключение CSS стилей.
-func ServeCSS(writer http.ResponseWriter, request *http.Request) {
-	http.ServeFile(writer, request, "website/styles.css")
+func checkSecretPath(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path == "/favicon.ico" {
+			http.Error(writer, "Access to <"+request.URL.Path+"> is forbidden.", http.StatusForbidden)
+			return
+		}
+
+		handler.ServeHTTP(writer, request)
+	})
 }
 
 type PageVariables struct {

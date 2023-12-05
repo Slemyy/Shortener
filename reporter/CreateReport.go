@@ -60,6 +60,8 @@ func CreateReport(hierarchy []string, statistics []Statistic) map[string]interfa
 					}
 				}
 				currLevel = currLevel[URL].(map[string]interface{})
+			} else {
+				continue
 			}
 
 			if _, ok := currLevel["Sum"]; !ok {

@@ -32,13 +32,13 @@ func RedirectHandler(writer http.ResponseWriter, request *http.Request, mut *syn
 	}
 	req, _ := bufio.NewReader(conn).ReadString('\n')
 
-	go func() {
-		connReport, _ := net.Dial("tcp", "localhost:9090")
-		_, err = fmt.Fprint(connReport, "add_stats "+req[:len(req)-1]+" "+shortURL+" "+GetClientIP(request)+"\n")
-		_ = connReport.Close()
-	}()
-
 	if req[:5] != "Error" {
+		go func() {
+			connReport, _ := net.Dial("tcp", "localhost:9090")
+			_, err = fmt.Fprint(connReport, "add_stats "+req[:len(req)-1]+" "+shortURL+" "+GetClientIP(request)+"\n")
+			_ = connReport.Close()
+		}()
+
 		switch strings.HasPrefix(req, "http") || strings.HasPrefix(req, "https") {
 		case true:
 			http.Redirect(writer, request, req[:len(req)-1], http.StatusFound)
